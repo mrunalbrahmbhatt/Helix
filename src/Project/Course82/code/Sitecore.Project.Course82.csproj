@@ -97,7 +97,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\web.config" />
+    <None Include="Views\web.config" />
     <Content Include="App_Config\Include\Project\z.Sitecore.Project.Course82.Serialization.config" />
     <Content Include="App_Config\Include\Project\z.Sitecore.Project.Course82.Settings.config" />
     <None Include="packages.config" />
