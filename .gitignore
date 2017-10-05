@@ -13,3 +13,7 @@ obj
 
 /.vs/Helix/v15/sqlite3/*.ide
 /.vs/config/applicationhost.config
+bin
+
+/templates/module-template/ModuleName/code/NamespacePrefix.ModuleType.ModuleName.csproj.user
+/templates/module-template/ModuleName/tests/bin
