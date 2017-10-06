@@ -126,7 +126,6 @@ function Rename-Module
     Update-FileContent -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType -FileExtensionsRegex $config.FileExtensionsToUpdateContentRegex
     Update-FileContent -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $config.ModuleName -FileExtensionsRegex $config.FileExtensionsToUpdateContentRegex
 }
-
 <#
     .SYNOPSIS
     Renames files, replaces OldValue with NewValue in the filename. 
@@ -160,7 +159,6 @@ function Rename-Files
     $fileItems = Get-ChildItem -File -Path "$StartPath" -Filter $pattern -Recurse -Force | Where-Object { $_.FullName -notmatch "\\(obj|bin)\\?" } 
     $fileItems | Rename-Item -NewName { $_.Name -replace $OldValue, $NewValue } -Force
 }
-
 <#
     .SYNOPSIS
     Renames folders, replaces OldValue with NewValue in the folder name. 
@@ -197,7 +195,6 @@ function Rename-Folders
     $folderItems = Get-ChildItem -Directory -Path "$StartPath" -Recurse -Filter $pattern -Force | Where-Object { $_.FullName -notmatch "\\(obj|bin)\\?" } | Sort-Object { $_.FullName.Length } -Descending
     $folderItems | Rename-Item -NewName { $_.Name -replace $OldValue, $NewValue } -Force
 }
-
 <#
     .SYNOPSIS
     Updates the content of files, replaces OldValue with NewValue. 
@@ -238,7 +235,6 @@ function Update-FileContent
     # -ireplace: case insensitive replacement
     $filesToUpdate | ForEach-Object { (Get-Content $_ ) -ireplace [regex]::Escape($OldValue), $NewValue | Set-Content $_ -Force }
 }
-
 <#
     .SYNOPSIS
     Returns the path of the new module.
@@ -259,7 +255,6 @@ function Get-ModulePath
 
     return $modulePath
 }
-
 <#
     .SYNOPSIS
     Helper function to retrieve the literal 'Feature' or 'Foundation' solution folder.
@@ -271,20 +266,33 @@ function Get-ModuleTypeSolutionFolder
 {
     return $dte.Solution.Projects | Where-Object { $_.Name -eq $config.ModuleType -and $_.Kind -eq [EnvDTE80.ProjectKinds]::vsProjectKindSolutionFolder } | Select-Object -First 1
 }
+<#
+    .SYNOPSIS
+    The main function that generates new GUID and replace it with existing one.
 
+    .DESCRIPTION
+    This function should be considered private and is called from the Add-Module function.
+
+    .PARAMETER AssemblyInfoPath
+    The full path of the project's Properties/AssemblyInfo.cs file. This is used to open the file, regenerate GUID and seva it back.
+
+#>
 function Set-AssemblyGuid
 {
     Param(
-	 [Parameter(Position=0, Mandatory=$True)]
-        [string]$assmblyInfoPath
-		)
+	    [Parameter(Position=0, Mandatory=$True)]
+        [string]$AssemblyInfoPath
+	)
 	
 	try
 	{
 	   $pattern = '\[assembly: Guid\("(.*)"\)\]'
-       (Get-Content $assmblyInfoPath) | ForEach-Object{
+
+       (Get-Content $AssemblyInfoPath) | ForEach-Object{
+		#analyze each line of file
         if($_ -match $pattern)
-		 {                  
+		 {         
+		   
            $newGuid = [System.Guid]::NewGuid().Guid;
            '[assembly: Guid("{0}")]' -f $newGuid
          } else 
@@ -292,7 +300,7 @@ function Set-AssemblyGuid
            # Output line as is
             $_
          }
-        } | Set-Content $assmblyInfoPath
+        } | Set-Content $AssemblyInfoPath
 	}
 	catch
     {
@@ -300,7 +308,6 @@ function Set-AssemblyGuid
         exit
     }
 }
-
 <#
     .SYNOPSIS
     Adds new module project(s) to the solution.

@@ -2,7 +2,7 @@
 	"__comment": "This configuration file is used by the add-helix-module.ps1 script which creates modules for Sitecore Helix solutions.",
 	"config": {
 		"__comment__moduleTemplatePath": "Update the moduleTemplatePath property to point to your module-template location.",
-		"moduleTemplatePath": "D:\\Projects\\Internal\\Labs\\Helix\\templates\\module-template",
+		"moduleTemplatePath": "D:\\Projects\\Internal\\Labs\\Helix\\configuration\\module-template",
 		"__comment__featureNamespacePrefix": "Replace the value for featureNamespacePrefix with a suitable namespace prefix. The Feature.<ModuleName> will be appended by the script.",
 		"featureNamespacePrefix": "Sitecore",
 		"__comment__foundationNamespacePrefix": "Replace the value for featureNamespacePrefix with a suitable namespace prefix. The Foundation.<ModuleName> will be appended by the script.",

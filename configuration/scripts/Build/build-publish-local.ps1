@@ -1,9 +1,25 @@
-Function Extract-Content($projectFile)
-{
-	$files = @();
-	$absolutePathToParent = Split-Path $projectFile
+<#
+    .SYNOPSIS
+    The main function that parses $ProjectFile and returns Array of paths to [ContentItems + all inside of bin folder].
 
-	[xml]$xml = Get-Content $projectFile
+    .DESCRIPTION
+    This function should be considered private and is called from the  function.
+
+    .PARAMETER ProjectFile
+    The full path of the ProjectFile file. This is used to parse ProjectFile as xml and extract path's to files from <ItemGroup><Content>.
+
+#>
+function Extract-Content
+{
+	 Param(
+        [Parameter(Position=0, Mandatory=$True)]
+        [string]$ProjectFile
+    )
+
+	$files = @();
+	$absolutePathToParent = Split-Path $ProjectFile
+
+	[xml]$xml = Get-Content $ProjectFile
     $xml.Project.ItemGroup.Content | %{
         $path = $_.Include	
 
@@ -16,27 +32,65 @@ Function Extract-Content($projectFile)
 	$bin = Join-Path  $absolutePathToParent "bin"
 	#$files += @($bin)
 	$binFiles = Get-ChildItem $bin -Recurse | ForEach-Object{		 
-		 if (Test-Path $_.FullName -pathType leaf){			
+		 if (Test-Path $_.FullName -pathType leaf)
+		 {			
 			 $files += @($_.FullName)
 		 }		 
 	}  
 
 	return $files
 }
+<#
+    .SYNOPSIS
+    The main function that is filtering out FilterArray from ArrayToBeFiltered.
 
-Function ArrayFilter ($ArrayToBeFiltered, $FilterArray) 
+    .DESCRIPTION
+    This function should be considered private and is called from the function.
+
+    .PARAMETER ArrayToBeFiltered
+    Array that has to be filtered.
+
+#>
+function ArrayFilter () 
 {
-   Return $ArrayToBeFiltered | select-string -pattern $FilterArray -simplematch -notmatch
+   Param(
+        [Parameter(Position=0, Mandatory=$True)]
+        [string[]]$ArrayToBeFiltered,
+	    [Parameter(Position=1, Mandatory=$True)]
+        [string[]]$FilterArray
+    )
+
+   return $ArrayToBeFiltered | select-string -pattern $FilterArray -simplematch -notmatch
 }
+<#
+    .SYNOPSIS
+    The main function that is filtering out FilterArray from ArrayToBeFiltered.
 
-Function Get-ProjectsPaths($slnDir, $slnName, $filesToExclude)
+    .DESCRIPTION
+    This function should be considered private and is called from the function.
+
+    .PARAMETER ArrayToBeFiltered
+    Array that has to be filtered.
+
+#>
+function Get-ProjectsPaths
 {
-	  $slnFilePath = Join-Path $slnDir $slnName
+	 Param(
+        [Parameter(Position=0, Mandatory=$True)]
+        [string]$SlnDir,
+	    [Parameter(Position=1, Mandatory=$True)]
+        [string]$SlnName,
+		[Parameter(Position=2, Mandatory=$True)]
+        [string[]]$FilesToExclude
+     )
 
-		Write-Host "Get All Content Items from Projects of  $($slnFilePath) except of $($filesToExclude)" -foregroundcolor green  	
+	  $slnFilePath = Join-Path $SlnDir $SlnName
 
-		$slnfiles = @();
-		Get-Content $slnFilePath |
+	  Write-Host "Get All Content Items from Projects of  $($slnFilePath) except of $($FilesToExclude)" -foregroundcolor green  	
+
+	  $slnfiles = @();
+
+	  Get-Content $slnFilePath |
           Select-String 'Project\(' |
             ForEach-Object {
               $projectParts = $_ -Split '[,=]' | 
@@ -46,25 +100,21 @@ Function Get-ProjectsPaths($slnDir, $slnName, $filesToExclude)
 			    $slnfiles += @($projectParts[2])
             }			 
 
-			$filteredArray = ArrayFilter $slnfiles $filesToExclude
-			$filteredArray | Foreach {
-				Write-Host "Filtered item to publish  $($_)" -foregroundcolor green 
-			}
+	 $filteredArray = ArrayFilter $slnfiles $FilesToExclude			
 
-			$csprojs = $filteredArray | ?{ $_ -match ".csproj$" }			
+	 $csprojs = $filteredArray | ?{ $_ -match ".csproj$" }			
 
-			$projItems= @();
-			$csprojs| Foreach {
-				$filePath = Join-Path $slnDir $_
+	 $projItems= @();
+	 $csprojs| 
+		Foreach {
+			$filePath = Join-Path $SlnDir $_
 
-				Write-Host "file path  $($filePath)" -foregroundcolor green 				
-				$projItems += @($filePath)
-			  }
-		 
+			Write-Host "file path  $($filePath)" -foregroundcolor green 				
+			$projItems += @($filePath)
+		}		 
 		  
-			  return $projItems;
+	return $projItems;
 }
-
 
 Function Get-AllFilesPathsToPublish($sourceSlnDir, $slnName, $filesToExclude)
 {
@@ -76,7 +126,7 @@ Function Get-AllFilesPathsToPublish($sourceSlnDir, $slnName, $filesToExclude)
 			  }
 		 
 	$contentItems | Foreach {
-				 Write-Host "content items  $($_)" -foregroundcolor green 
+				 Write-Host "$($_)" -foregroundcolor green 
 				}
 
 	return $contentItems;  
@@ -157,4 +207,4 @@ Function Build-Publish-Local($sourceSlnDir, $slnName,  $destinationDir, $segment
 	Publish-AllToDir $sourceSlnDir $slnName $destinationDir $segmentMarker $filesToExclude
 }
 
-Build-Publish-Local -sourceSlnDir D:\Projects\Internal\Labs\Helix -slnName Helix.sln -destinationDir D:\TestDeploy -segmentMarker code -filesToExclude (".Test.csproj", "NamespacePrefix.ModuleType.ModuleName.csproj", "NamespacePrefix.ModuleType.ModuleName.Tests.csproj")
+Build-Publish-Local -sourceSlnDir D:\Projects\Internal\Labs\Helix -slnName Helix.sln -destinationDir D:\TestDeploy -segmentMarker code -filesToExclude (".Test.csproj", "NamespacePrefix.ModuleType.ModuleName.csproj", "NamespacePrefix.ModuleType.ModuleName.Tests.csproj", "Scripts.pssproj")
