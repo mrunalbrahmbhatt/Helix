@@ -24,11 +24,16 @@ Function Extract-Content($projectFile)
 	return $files
 }
 
-Function Get-ProjectsPaths($slnDir, $slnName)
+Function ArrayFilter ($ArrayToBeFiltered, $FilterArray) 
+{
+   Return $ArrayToBeFiltered | select-string -pattern $FilterArray -simplematch -notmatch
+}
+
+Function Get-ProjectsPaths($slnDir, $slnName, $filesToExclude)
 {
 	  $slnFilePath = Join-Path $slnDir $slnName
 
-		Write-Host "Get All Content Items from Projects of  $($slnFilePath)" -foregroundcolor green  	
+		Write-Host "Get All Content Items from Projects of  $($slnFilePath) except of $($filesToExclude)" -foregroundcolor green  	
 
 		$slnfiles = @();
 		Get-Content $slnFilePath |
@@ -41,7 +46,12 @@ Function Get-ProjectsPaths($slnDir, $slnName)
 			    $slnfiles += @($projectParts[2])
             }			 
 
-			$csprojs = $slnfiles | ?{ $_ -match ".csproj$" } 			
+			$filteredArray = ArrayFilter $slnfiles $filesToExclude
+			$filteredArray | Foreach {
+				Write-Host "Filtered item to publish  $($_)" -foregroundcolor green 
+			}
+
+			$csprojs = $filteredArray | ?{ $_ -match ".csproj$" }			
 
 			$projItems= @();
 			$csprojs| Foreach {
@@ -56,9 +66,9 @@ Function Get-ProjectsPaths($slnDir, $slnName)
 }
 
 
-Function Get-AllFilesPathsToPublish($sourceSlnDir, $slnName)
+Function Get-AllFilesPathsToPublish($sourceSlnDir, $slnName, $filesToExclude)
 {
-	$projItems = Get-ProjectsPaths $sourceSlnDir $slnName
+	$projItems = Get-ProjectsPaths $sourceSlnDir $slnName $filesToExclude
 
 	$contentItems= @();
 	$projItems| Foreach {
@@ -110,21 +120,23 @@ Function Get-TempDirPath($destinationDir)
 	return $tempDestinationPath
 }
 
-Function Publish-AllToDir($sourceSlnDir, $slnName,  $destinationDir, $segmentMarker)
+Function Publish-AllToDir($sourceSlnDir, $slnName,  $destinationDir, $segmentMarker, $filesToExclude)
 {
 	$tempDestinationPath = Get-TempDirPath $destinationDir	
 
 	Delete-DirIfExists $tempDestinationPath
 
-	$filesToPublish = Get-AllFilesPathsToPublish $sourceSlnDir $slnName	
+	$filesToPublish = Get-AllFilesPathsToPublish $sourceSlnDir $slnName	$filesToExclude
 
 	Copy-FilesToDestination $tempDestinationPath $filesToPublish $segmentMarker	
 
 	Copy-Item $tempDestinationPath $destinationDir -Recurse -Force
+
+	Delete-DirIfExists $tempDestinationPath
 }
 
 Import-Module -Name "C:\Program Files (x86)\WindowsPowerShell\Modules\Invoke-MsBuild\2.6.0\Invoke-MsBuild.psm1"
-Function Build-Publish-Local($sourceSlnDir, $slnName,  $destinationDir, $segmentMarker)
+Function Build-Publish-Local($sourceSlnDir, $slnName,  $destinationDir, $segmentMarker, $filesToExclude)
 {
 	$slnPath = Join-Path $sourceSlnDir $slnName
 	Write-Host "Executing MSBuild for $($slnPath)..."
@@ -142,7 +154,7 @@ Function Build-Publish-Local($sourceSlnDir, $slnName,  $destinationDir, $segment
         Exit 1
     }
 
-	Publish-AllToDir $sourceSlnDir $slnName $destinationDir $segmentMarker
+	Publish-AllToDir $sourceSlnDir $slnName $destinationDir $segmentMarker $filesToExclude
 }
 
-Build-Publish-Local -sourceSlnDir D:\Projects\Internal\Labs\Helix -slnName Helix.sln -destinationDir D:\Sitecore\labs.local\Website -segmentMarker code 
+Build-Publish-Local -sourceSlnDir D:\Projects\Internal\Labs\Helix -slnName Helix.sln -destinationDir D:\TestDeploy -segmentMarker code -filesToExclude (".Test.csproj", "NamespacePrefix.ModuleType.ModuleName.csproj", "NamespacePrefix.ModuleType.ModuleName.Tests.csproj")
