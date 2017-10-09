@@ -36,7 +36,7 @@ function Create-Config
     {
         $config = New-Object psobject
         Add-Member -InputObject $config -Name SlnName -Value $jsonFile.config.slnName -MemberType NoteProperty
-        Add-Member -InputObject $config -Name DestinationDirectoryPath -Value $jsonFile.config.destinationDir -MemberType NoteProperty
+		Add-Member -InputObject $config -Name PublistTargetsFilePath -Value $jsonFile.config.publishSettingsFilePath -MemberType NoteProperty
         Add-Member -InputObject $config -Name SegmentMarker -Value $jsonFile.config.segmentMarker -MemberType NoteProperty
 		
         [System.Collections.ArrayList]$arrList=@()
@@ -46,6 +46,29 @@ function Create-Config
         
         return $config
     }
+}
+<#
+    .SYNOPSIS
+    The main function that parses $ProjectFile and returns Array of paths to [ContentItems + all inside of bin folder].
+
+    .DESCRIPTION
+    This function should be considered private and is called from the  function.
+
+    .PARAMETER ProjectFile
+    The full path of the ProjectFile file. This is used to parse ProjectFile as xml and extract path's to files from <ItemGroup><Content>.
+
+#>
+function Get-DestinationPathFromPublishTargets
+{
+	 Param(
+        [Parameter(Position=0, Mandatory=$True)]
+        [string]$PublishTargetsFile
+    )	
+
+	[xml]$xml = Get-Content $PublishTargetsFile
+    $publishPath = $xml.Project.PropertyGroup.publishUrl
+
+	return $publishPath
 }
 <#
     .SYNOPSIS
@@ -273,52 +296,6 @@ function Copy-FilesToDestination
     .DESCRIPTION
     This function should be considered private and is called from the function.
 
-    .PARAMETER DirPath
-    Array that has to be filtered.	
-#>
-function Delete-DirIfExists
-{
-	Param(
-        [Parameter(Position=0, Mandatory=$True)]
-        [string]$DirPath	
-       
-     )
-
-	if (Test-Path $DirPath ) 
-	{
-	  Remove-Item $DirPath -Recurse -Force
-    }
-}
-<#
-    .SYNOPSIS
-    The main function that is filtering out FilterArray from ArrayToBeFiltered.
-
-    .DESCRIPTION
-    This function should be considered private and is called from the function.
-
-    .PARAMETER DestinationDir
-    Array that has to be filtered.	
-#>
-function Get-TempDirPath
-{
-	Param(
-        [Parameter(Position=0, Mandatory=$True)]
-        [string]$DestinationDir	       
-     )
-
-	$tempDestinationPath = Split-Path $DestinationDir
-
-	$tempDestinationPath = Join-Path $tempDestinationPath "Temp"		
-
-	return $tempDestinationPath
-}
-<#
-    .SYNOPSIS
-    The main function that is filtering out FilterArray from ArrayToBeFiltered.
-
-    .DESCRIPTION
-    This function should be considered private and is called from the function.
-
     .PARAMETER SourceSlnDir
     Array that has to be filtered.	
 	.PARAMETER SlnName
@@ -344,25 +321,11 @@ function Publish-AllToDir
         [string]$SegmentMarker,	
 		[Parameter(Position=4, Mandatory=$True)]
         [string[]]$FilesToExclude		
-     )
-
-	$tempDestinationPath = Get-TempDirPath $DestinationDir	
-
-	Write-Output "Temporary directory for publishing is created $($tempDestinationPath)." 
+     )	
 
 	$filesToPublish = Get-AllFilesPathsToPublish $SourceSlnDir $SlnName	$FilesToExclude
 
-	Copy-FilesToDestination $tempDestinationPath $filesToPublish $SegmentMarker	
-
-	Write-Output "Copying files from $($tempDestinationPath) to $($DestinationDir)." 
-	
-	Copy-Item $tempDestinationPath $DestinationDir -Recurse 
-
-	Write-Output "All files are successfully copied." 
-
-	Delete-DirIfExists $tempDestinationPath
-
-	Write-Output "Temporary directory $($tempDestinationPath) is removed." 
+	Copy-FilesToDestination $DestinationDir $filesToPublish $SegmentMarker		
 }
 
 function Run
@@ -416,9 +379,11 @@ function Run
 
           Exit 1
         }
+	     
+	    $publishDestinationPath = Get-DestinationPathFromPublishTargets $config.PublistTargetsFilePath
 
 	    Write-Output "Publishing is started...."
-		Publish-AllToDir $solutionRootFolder $config.SlnName $config.DestinationDirectoryPath $config.SegmentMarker $config.FilesToExclude
+		Publish-AllToDir $solutionRootFolder $config.SlnName $publishDestinationPath $config.SegmentMarker $config.FilesToExclude
 
 		Write-Output "Publishing to $($config.DestinationDirectoryPath) is successfully finished."
 	#}

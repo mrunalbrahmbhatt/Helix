@@ -30,7 +30,6 @@
     <Folder Include="Build\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Build\build-publish-loca-oldl.ps1" />
     <Compile Include="Build\build-publish-local.ps1" />
     <Compile Include="Helix\add-helixmodule.ps1" />
   </ItemGroup>

@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{7D6B05CE-728F-4D07-B962-2901B7875A41}"
+	ProjectSection(SolutionItems) = preProject
+		configuration\publishsettings.targets = configuration\publishsettings.targets
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Foundation", "Foundation", "{E40D0926-3434-49E4-A288-03D29ADCD43A}"
 EndProject
