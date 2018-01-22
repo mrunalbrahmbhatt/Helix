@@ -10,9 +10,15 @@
 
 # Some hardcoded values
 $featureModuleType = "Feature"                                      # Used in Add-Feature and Create-Config.
-$foundationModuleType = "Foundation"                                # Used in Add-Foundation and Create-Config.
+$foundationModuleType = "Foundation"       
+$projectModuleType = "Project" 
+# Used in Add-Foundation and Create-Config.
 $addHelixModuleConfigFile = "add-helix-module-configuration.json"   # Used in Add-Module.
 $csprojExtension = ".csproj"                                        # Used in Add-Projects
+
+Add-Type -AssemblyName EnvDTE80
+
+#$dte = [System.Runtime.InteropServices.Marshal]::GetActiveObject("VisualStudio.DTE.15.0")
 
 <#
     .SYNOPSIS
@@ -53,6 +59,11 @@ function Create-Config
     if ($jsonFile)
     {
         $config = New-Object psobject
+
+		Add-Member -InputObject $config -Name FeatureTemplatePath -Value $jsonFile.config.featureTemplatePath -MemberType NoteProperty
+		Add-Member -InputObject $config -Name FoundationTemplatePath -Value $jsonFile.config.foundationTemplatePath -MemberType NoteProperty
+		Add-Member -InputObject $config -Name ProjectTemplatePath -Value $jsonFile.config.projectTemplatePath -MemberType NoteProperty
+
         Add-Member -InputObject $config -Name ModuleTemplatePath -Value $jsonFile.config.moduleTemplatePath -MemberType NoteProperty
         Add-Member -InputObject $config -Name SourceFolderName -Value $jsonFile.config.sourceFolderName -MemberType NoteProperty
         Add-Member -InputObject $config -Name TemplateNamespacePrefix -Value $jsonFile.config.templateNamespacePrefix -MemberType NoteProperty
@@ -83,6 +94,11 @@ function Create-Config
         {
             $newNamespacePrefix = $jsonFile.config.foundationNamespacePrefix
         }
+		 if ($ModuleType -eq $projectModuleType)
+        {
+            $newNamespacePrefix = $jsonFile.config.projectNamespacePrefix
+        }
+
         Add-Member -InputObject $config -Name NamespacePrefix -Value $newNamespacePrefix -MemberType NoteProperty
         Add-Member -InputObject $config -Name SolutionRootFolder -Value $SolutionRootFolder -MemberType NoteProperty
 
@@ -104,17 +120,22 @@ function Rename-Module
 {
     Param(
         [Parameter(Position=0, Mandatory=$True)]
-        [string]$StartPath
+        [string]$StartPath,
+		[Parameter(Position=1, Mandatory=$True)]
+        [string]$ModuleName
     )
 
+	
     # Rename all the folders from the copied module-template.
     Rename-Folders -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType
-    Rename-Folders -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $config.ModuleName
+    Rename-Folders -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $ModuleName
 
+	
     # Rename all the files from the copied module-template.
     Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateNamespacePrefix -NewValue $config.NamespacePrefix
-    Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType
-    Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $config.ModuleName
+    #Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType
+	 Write-Output "Renaming -3 $OldValue to $NewValue"
+    Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $ModuleName
 
     # Update file content for GUIDs.
 	
@@ -124,7 +145,7 @@ function Rename-Module
     # Update file content for namespaces, module tpyes and module name.
     Update-FileContent -StartPath "$StartPath" -OldValue $config.TemplateNamespacePrefix -NewValue $config.NamespacePrefix -FileExtensionsRegex $config.FileExtensionsToUpdateContentRegex
     Update-FileContent -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType -FileExtensionsRegex $config.FileExtensionsToUpdateContentRegex
-    Update-FileContent -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $config.ModuleName -FileExtensionsRegex $config.FileExtensionsToUpdateContentRegex
+    Update-FileContent -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $ModuleName -FileExtensionsRegex $config.FileExtensionsToUpdateContentRegex
 }
 <#
     .SYNOPSIS
@@ -264,7 +285,7 @@ function Get-ModulePath
 #>
 function Get-ModuleTypeSolutionFolder
 {
-    return $dte.Solution.Projects | Where-Object { $_.Name -eq $config.ModuleType -and $_.Kind -eq [EnvDTE80.ProjectKinds]::vsProjectKindSolutionFolder } | Select-Object -First 1
+   return $dte.Solution.Projects | Where-Object { $_.Name -eq $config.ModuleType -and $_.Kind -eq [EnvDTE80.ProjectKinds]::vsProjectKindSolutionFolder } | Select-Object -First 1
 }
 <#
     .SYNOPSIS
@@ -324,16 +345,20 @@ function Add-Projects
     )
 
     Write-Output "Adding project(s)..."
-    $moduleTypeFolder = Get-ModuleTypeSolutionFolder
-    Write-Output $moduleTypeFolder
+    $moduleTypeFolder = Get-ModuleTypeSolutionFolder  
 
-    # When the literal 'Feature' or 'Foundation' solution folder does not exist in the solution it will be created. 
+     #When the literal 'Feature' or 'Foundation' solution folder does not exist in the solution it will be created. 
     if (-not $moduleTypeFolder)
     {
         $dte.Solution.AddSolutionFolder($config.ModuleType)
         $moduleTypeFolder = Get-ModuleTypeSolutionFolder
-    }
+    }	
+		
+	Write-Output $moduleTypeFolder	
+	Write-Output $moduleTypeFolder.Object	
+	
     $folderInterface = Get-Interface $moduleTypeFolder.Object ([EnvDTE80.SolutionFolder])
+
     $moduleNameFolder = $folderInterface.AddSolutionFolder($config.ModuleName)
     $moduleNameInterface = Get-Interface $moduleNameFolder.Object ([EnvDTE80.SolutionFolder])	
     
@@ -376,6 +401,8 @@ function Add-Module
         [string]$ModuleType
     )
     
+    Write-Output  "Add-Module is started: parameters: ModuleName = $ModuleName; ModuleType = $ModuleType"
+
     try
     {
         # Do a check if there is a solution active in Visual Studio.
@@ -401,8 +428,10 @@ function Add-Module
         # Create a config object we can use throughout the other functions.
         $config = Create-Config -JsonConfigFilePath "$configJsonFile" -ModuleType $ModuleType -ModuleName $ModuleName -SolutionRootFolder $solutionRootFolder
         
+		
+		$modulePathName = "$($ModuleType)TemplatePath"
         # Get the path to the module-template folder and verify that is exists on disk.
-        $copyModuleFromLocation = Join-Path -Path $config.ModuleTemplatePath -ChildPath $config.TemplateModuleName
+        $copyModuleFromLocation = $config.$modulePathName
         if (-not (Test-Path $copyModuleFromLocation))
         {
             throw [System.IO.DirectoryNotFoundException] "$copyModuleFromLocation folder not found."
@@ -411,11 +440,12 @@ function Add-Module
         $modulePath = Get-ModulePath
         Write-Output "Copying module template to $modulePath."
         Copy-Item -Path "$copyModuleFromLocation" -Destination "$modulePath" -Recurse
-        Rename-Module -StartPath "$modulePath"			
+        Rename-Module -StartPath "$modulePath"  -ModuleName	$ModuleName
 		
+
         Add-Projects -ModulePath "$modulePath"
 
-        Write-Output "Completed adding $($config.NamespacePrefix).$moduleType.$moduleName."
+        Write-Output "Completed adding $($config.NamespacePrefix).$moduleType.$ModuleName."
     }
     catch
     {
@@ -446,6 +476,9 @@ function Add-Feature
         [string]$Name
     )
 
+    Write-Output "Add-Feature: parameters Name =($Name)"
+	Write-Output "Add-Feature: parameters Type =($featureModuleType)"
+
     Add-Module -ModuleName $Name -ModuleType $featureModuleType
 }
 
@@ -473,3 +506,14 @@ function Add-Foundation
 
     Add-Module -ModuleName $Name -ModuleType $foundationModuleType
 }
+
+function Add-Project
+{
+    Param(
+        [Parameter(Position=0, Mandatory=$True)]
+        [string]$Name
+    )
+
+    Add-Module -ModuleName $Name -ModuleType $projectModuleType
+}
+

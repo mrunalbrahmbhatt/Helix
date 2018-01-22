@@ -3,7 +3,7 @@
     "This configuration file is used by the build-publish-local.ps1 script which builds and publishes projects included in Solution to file system.",
   "config": {
     "slnName": "Helix.sln",
-    "publishSettingsFilePath": "D:\\Projects\\Internal\\Labs\\Helix\\configuration\\publishsettings.targets",
+    "publishSettingsFilePath": "D:\\Projects\\Internal\\Labs\\Helix\\configuration\\Build\\publishsettings.targets",
     "segmentMarker": "code",
     "filesToExclude": [ ".Test.csproj", "NamespacePrefix.ModuleType.ModuleName.csproj", "NamespacePrefix.ModuleType.ModuleName.Tests.csproj", "Scripts.pssproj" ]
   }
