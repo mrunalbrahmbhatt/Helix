@@ -6,4 +6,4 @@
     Once the script is loaded the Add-Feature and Add-Foundation methods are available in the Package Manager Console in Visual Studio.
 #>
 . "D:\Projects\Internal\Labs\Helix\configuration\scripts\Helix\add-helixmodule.ps1"
-. "D:\Projects\Internal\Labs\Helix\configuration\scripts\Build\Script1.ps1"
+. "D:\Projects\Internal\Labs\Helix\configuration\scripts\Build\build-publish-local.ps1"
