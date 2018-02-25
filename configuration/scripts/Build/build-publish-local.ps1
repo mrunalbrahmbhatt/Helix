@@ -330,8 +330,8 @@ function Publish-AllToDir
 
 function Run
 {
-   # try
-  #  {
+   try
+   {
         # Do a check if there is a solution active in Visual Studio.
         # If there is no active solution the Add-Projects function would fail.
 
@@ -380,18 +380,19 @@ function Run
           Exit 1
         }
 	     
-	    $publishDestinationPath = Get-DestinationPathFromPublishTargets $config.PublistTargetsFilePath
+	    $publishTargetsFilePath = Join-Path -Path $solutionRootFolder -ChildPath $config.PublistTargetsFilePath
+	    $publishDestinationPath = Get-DestinationPathFromPublishTargets $publishTargetsFilePath
 
 	    Write-Output "Publishing is started...."
 		Publish-AllToDir $solutionRootFolder $config.SlnName $publishDestinationPath $config.SegmentMarker $config.FilesToExclude
 
-		Write-Output "Publishing to $($config.DestinationDirectoryPath) is successfully finished."
-	#}
-	#catch
-	#{
-	#	Write-Output "Exception... "
-	#	Write-Error $error[0]
- #       exit
-	#}
+		Write-Output "Publishing to $($publishDestinationPath) is successfully finished."
+	}
+	catch
+	{
+		Write-Output "Exception... "
+		Write-Error $error[0]
+        exit
+	}
 }
 

@@ -265,10 +265,13 @@ function Update-FileContent
     This function should be considered private and is called from the Add-Module function.
 #>
 function Get-ModulePath
-{
+{	
     $sourceFolderPath =  Join-Path -Path $config.SolutionRootFolder -ChildPath $config.SourceFolderName
-    $moduleTypePath = Join-Path -Path "$sourceFolderPath" -ChildPath $config.ModuleType
-    $modulePath = Join-Path -Path "$moduleTypePath" -ChildPath $config.ModuleName
+
+    $moduleTypePath = Join-Path -Path "$sourceFolderPath" -ChildPath $config.ModuleType	
+	
+    $modulePath = Join-Path -Path "$moduleTypePath" -ChildPath $config.ModuleName	
+
     if (Test-Path $modulePath)
     {
         throw [System.ArgumentException] "$modulePath already exists."
@@ -427,17 +430,19 @@ function Add-Module
 
         # Create a config object we can use throughout the other functions.
         $config = Create-Config -JsonConfigFilePath "$configJsonFile" -ModuleType $ModuleType -ModuleName $ModuleName -SolutionRootFolder $solutionRootFolder
-        
-		
+        		
 		$modulePathName = "$($ModuleType)TemplatePath"
-        # Get the path to the module-template folder and verify that is exists on disk.
-        $copyModuleFromLocation = $config.$modulePathName
+		
+	    # Get the path to the module-template folder and verify that is exists on disk.
+        $copyModuleFromLocation = Join-Path -Path $solutionRootFolder -ChildPath $config.$modulePathName
+		
         if (-not (Test-Path $copyModuleFromLocation))
         {
             throw [System.IO.DirectoryNotFoundException] "$copyModuleFromLocation folder not found."
         }
-        
-        $modulePath = Get-ModulePath
+		
+        $modulePath = Get-ModulePath 
+		
         Write-Output "Copying module template to $modulePath."
         Copy-Item -Path "$copyModuleFromLocation" -Destination "$modulePath" -Recurse
         Rename-Module -StartPath "$modulePath"  -ModuleName	$ModuleName
