@@ -5,6 +5,6 @@
     "slnName": "Helix.sln",
     "publishSettingsFilePath": "\\configuration\\scripts\\Build\\publishsettings.targets",
     "segmentMarker": "code",
-    "filesToExclude": [ ".Test.csproj", ".ModuleName.csproj", ".ModuleName.Tests.csproj", "Scripts.pssproj" ]
+    "filesToExclude": [ ".Test.csproj", ".ModuleName.csproj", ".ProjectName.csproj", ".FeatureName.csproj", "FoundationName.csproj", ".ModuleName.Tests.csproj", "Scripts.pssproj" ]
   }
 }
