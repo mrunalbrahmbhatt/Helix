@@ -23,7 +23,7 @@ $buildPublishConfigFile = "build-publish-configuration.json"   # Used in Add-Mod
     namespaces and tokens to replace.   
 
 #>
-function Create-Config
+function Create-Config-Build
 {
     Param(
         [Parameter(Position=0, Mandatory=$True)]
@@ -360,7 +360,7 @@ function Run
         }
 
         # Create a config object we can use throughout the other functions.
-        $config = Create-Config -JsonConfigFilePath "$configJsonFile" 
+        $config = Create-Config-Build -JsonConfigFilePath "$configJsonFile" 
 
 		Write-Output "Script configuration is found. $($config)"		
 	   
