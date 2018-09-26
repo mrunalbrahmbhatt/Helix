@@ -133,8 +133,8 @@ function Rename-Module
 	
     # Rename all the files from the copied module-template.
     Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateNamespacePrefix -NewValue $config.NamespacePrefix
-    #Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType
-	 Write-Output "Renaming -3 $OldValue to $NewValue"
+    Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleType -NewValue $config.ModuleType
+	Write-Output "Renaming -3 $OldValue to $NewValue"
     Rename-Files -StartPath "$StartPath" -OldValue $config.TemplateModuleName -NewValue $ModuleName
 
     # Update file content for GUIDs.
